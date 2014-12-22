@@ -6,7 +6,6 @@ var request      = require('request'), // Cookies should be enabled
     cloudscraper = {};
 var j = request.jar(new FileCookieStore('cookies.json'));
 request = request.defaults({ jar : j })
-var requestUrl = null;
 
 /**
  * Performs get request to url with headers.
@@ -15,7 +14,6 @@ var requestUrl = null;
  * @param  {[Object}   headers     Hash with headers, e.g. {'Referer': 'http://google.com', 'User-Agent': '...'}
  */
 cloudscraper.get = function(url, callback, headers) {
-  requestUrl = url;
   headers = headers || {};
 
   if (!url || !callback) {
@@ -41,7 +39,7 @@ function performRequest(url, callback, headers) {
 
     // If body contains specified string, solve challenge
     if (body.indexOf('a = document.getElementById(\'jschl-answer\');') !== -1) {
-      return solveChallenge(response, body, callback);
+      return solveChallenge(response, body, callback, url);
     }
 
     // All is good
@@ -50,7 +48,7 @@ function performRequest(url, callback, headers) {
 }
 
 
-function solveChallenge(response, body, callback) {
+function solveChallenge(response, body, callback, originalUrl) {
   var challenge = body.match(/name="jschl_vc" value="(\w+)"/),
       jsChlVc,
       answerResponse,
@@ -94,7 +92,7 @@ function solveChallenge(response, body, callback) {
     headers: headers
   }, function(error, response, body) {
     if (!error) {
-      request.get(requestUrl, callback);
+      request.get(originalUrl, callback);
       //callback(error, body, response);
     }
   });
