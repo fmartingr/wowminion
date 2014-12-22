@@ -28,3 +28,5 @@ node_modules
 .lock-wscript
 
 node_modules/
+
+cookies.json
