@@ -2,24 +2,25 @@ var cheerio = require('cheerio');
 var cloudscraper = require('./cloudscrapper.js');
 var print = require('node-print');
 var fs = require('fs');
+var path = require('path');
+var appdirs = require('appdirs');
+var request = require('request');
+var FileCookieStore = require('tough-cookie-filestore');
+var j = request.jar(new FileCookieStore('cookies.json'));
+request = request.defaults({ jar: j })
 
-var installedAddons = [
-    {
-        "folder": "Breeze",
-        "site": "curse",
-        "id": "breeze"
-    },
-    {
-        "folder": "GarrisonMissionManager",
-        "site": "curse",
-        "id": "garrison-mission-manager"
-    },
-    {
-        "folder": "MasterPlan",
-        "site": "curse",
-        "id": "master-plan"
+
+var userDataDir = appdirs.userDataDir('wowminion');
+console.log(userDataDir);
+
+var Addon = (function(addon) {
+    var addonObj = {
+        id: addon.id,
+        site: addon.site,
+        name: addon.name,
+        version: addon.version
     }
-];
+});
 
 var AddonManager = (function() {
     var addons = [];
@@ -101,6 +102,7 @@ var Curse = (function($){
     var addons = {};
 
     return {
+        id: 'curse',
         baseUrl: baseUrl,
         addons: addons,
         search: function(term, callback) {
@@ -155,7 +157,36 @@ var Curse = (function($){
             });
         },
         download: function(addonId, callback) {
+            var url = this.baseUrl + addonId + '/download';
+            var site = this;
+            $.getUrl(url, function(html, errors) {
+                if (!errors) {
+                    var $ = cheerio.load(html);
 
+                    var version = $('#breadcrumbs-wrapper > ul > li:nth-child(5) > span').text().trim();
+                    var name = $('#file-download > div > div.caption-container.h2.no-sub.no-nav > h2 > span > span > span').text().trim();
+                    var downloadUrl = $('.download-link').data('href');
+
+                    var fileName = site.id + '_' + addonId + '_' + version + '.zip';
+
+                    request(downloadUrl).pipe(
+                        fs.createWriteStream(path.join(userDataDir, 'files', fileName))
+                    );
+
+                    obj = {
+                        name: name,
+                        version: version,
+                        downloadUrl: downloadUrl,
+                        localPath: path.join(userDataDir, 'addons', fileName)
+                    };
+
+                    addons[addonId] = obj;
+
+                    callback(obj);
+                } else {
+                    // TODO errors
+                }
+            });
         }
     }
 });
