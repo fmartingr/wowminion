@@ -6,6 +6,7 @@ var request      = require('request'), // Cookies should be enabled
     cloudscraper = {};
 var j = request.jar(new FileCookieStore('cookies.json'));
 request = request.defaults({ jar : j })
+var requestUrl = null;
 
 /**
  * Performs get request to url with headers.
@@ -14,6 +15,7 @@ request = request.defaults({ jar : j })
  * @param  {[Object}   headers     Hash with headers, e.g. {'Referer': 'http://google.com', 'User-Agent': '...'}
  */
 cloudscraper.get = function(url, callback, headers) {
+  requestUrl = url;
   headers = headers || {};
 
   if (!url || !callback) {
@@ -92,7 +94,7 @@ function solveChallenge(response, body, callback) {
     headers: headers
   }, function(error, response, body) {
     if (!error) {
-      request.get(url, callback);
+      request.get(requestUrl, callback);
       //callback(error, body, response);
     }
   });
